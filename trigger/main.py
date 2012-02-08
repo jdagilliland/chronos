@@ -21,58 +21,21 @@ def set_interval(interval):
         return wrap
     return outer_wrap
 
-class Timer:
+class Trigger:
 
-    def __init__(self):
+    def __init__(self, height=None, width=None):
         self.start_time = time.time()
         self.elapsed = 0
-        self.on = False
+        self.running = False
+        self.display_enabled = True
 
-    def is_on(self):
-        return self.on
+        if height is None:
+            height = 6
+        self.height = height
 
-    def reset(self):
-        self.start_time = time.time()
-        self.elapsed = 0
-
-    def start(self):
-        if not self.on:
-            self.start_time = time.time()
-            self.on = True
-
-    def stop(self):
-        if self.on:
-            self.elapsed += time.time() - self.start_time
-            self.on = False
-
-    def toggle(self):
-        if self.on:
-            self.stop()
-        else:
-            self.start()
-
-    def get_elapsed(self):
-        if self.on:
-            elapsed = self.elapsed + (time.time() - self.start_time)
-            return elapsed
-        else:
-            return self.elapsed
-
-    def render(self, elapsed):
-        hours = math.floor(elapsed / 3600)
-        remainder = elapsed % 3600
-        minutes = math.floor(remainder / 60)
-        seconds = remainder % 60
-
-        return "%.2d:%.2d:%.2d" % (hours, minutes, seconds)
-
-
-class Window:
-
-    def __init__(self):
-        self.width = 25
-        self.height = 6
-        self.no_update = False
+        if width is None:
+            width = 35
+        self.width = width
 
     def add_padding(self, string, min_length):
         string_length = len(string)
@@ -86,13 +49,55 @@ class Window:
 
         return padding + string + padding
 
-    def print_string(self, string):
-        self.window.addstr(4, 1, string)
-        if not self.no_update:
-            self.window.refresh()
+    def build(self):
+        self.window = curses.newwin(self.height, self.width, 1, 1)
+        self.window.border(0)
+
+    def disable_display(self):
+        self.display_enabled = False
+
+    def enable_display(self):
+        self.display_enabled = True
+
+    def get_elapsed(self):
+        if self.running:
+            elapsed = self.elapsed + (time.time() - self.start_time)
+            return elapsed
+        else:
+            return self.elapsed
+
+    def format_seconds(self, elapsed):
+        hours = math.floor(elapsed / 3600)
+        remainder = elapsed % 3600
+        minutes = math.floor(remainder / 60)
+        seconds = remainder % 60
+
+        return "%.2d:%.2d:%.2d" % (hours, minutes, seconds)
+
+    def move(self, y, x):
+        self.window.mvwin(y, x)
+        self.refresh()
 
     def redraw(self):
         self.window.touchwin()
+
+    def refresh(self):
+        if self.display_enabled:
+            self.window.refresh()
+
+    def render_time(self):
+        display = self.format_seconds(self.get_elapsed())
+        if self.running:
+            display += '         '
+        else:
+            display += ' [Paused]'
+
+        self.window.addstr(4, 1, display)
+        self.refresh()
+
+    def reset(self):
+        self.start_time = time.time()
+        self.elapsed = 0
 
     def set_title(self, title):
         title = self.add_padding(title, self.width - 3)
@@ -101,22 +106,26 @@ class Window:
         underline = '-' * (self.width - 2)
         self.window.addstr(2, 1, underline)
 
-        self.window.refresh()
+        self.refresh()
 
-    def set_no_update(self, val):
-        self.no_update = val
+    def start(self):
+        if not self.running:
+            self.start_time = time.time()
+            self.running = True
 
-    def build(self, identifier):
-        row = (self.height * identifier) + 1
+    def stop(self):
+        if self.running:
+            self.elapsed += time.time() - self.start_time
+            self.running = False
 
-        self.window = curses.newwin(self.height, self.width, row, 1)
-        self.window.border(0)
+    def toggle(self):
+        if self.running:
+            self.stop()
+        else:
+            self.start()
 
-        self.window.refresh()
 
-
-def create_help(height, width):
-    help_window = curses.newwin(height - 2, width - 2, 1, 1)
+def print_help(help_window):
     help_window.addstr(0, 0, 'Help')
     help_window.addstr(1, 0, '----')
     help_window.addstr(3, 0, 'Commands')
@@ -136,18 +145,12 @@ def create_help(height, width):
         help_window.addstr(index + 6, 0, command)
 
     help_window.addstr(13, 0, 'To return to the main screen, type "q".')
-
-    return help_window
+    help_window.touchwin()
+    help_window.refresh()
 
 @set_interval(1)
-def update_window(window, timer):
-    string = timer.render(timer.get_elapsed())
-    if timer.is_on():
-        suffix = '         '
-    else:
-        suffix = ' [Paused]'
-    window.print_string(string + suffix)
-
+def update_trigger(trigger):
+    trigger.render_time()
 
 def main():
     """Primary entry point."""
@@ -159,25 +162,26 @@ def main():
     height, width = screen.getmaxyx()
     screen.refresh()
 
-    timers = []
-    windows = []
+    triggers = []
+
+    command_window = curses.newwin(1, width - 3, height - 2, 1)
+    help_window = curses.newwin(height - 2, width - 2, 1, 1)
 
     command = None
-    command_window = curses.newwin(1, width - 3, height - 2, 1)
-
     in_help_mode = False
 
     while command != 'q':
         char = screen.getch()
+
         if in_help_mode:
             if char != ord('q'):
                 continue
             else:
                 help_window.clear()
                 help_window.refresh()
-                for window in windows:
-                    window.set_no_update(False)
-                    window.redraw()
+                for trigger in triggers:
+                    trigger.enable_display()
+                    trigger.redraw()
                 in_help_mode = False
 
         if char != ord(':'):
@@ -189,67 +193,57 @@ def main():
         command_window.refresh()
         command_window.addstr(0, 0, ':')
 
-        command = command_window.getstr(0, 1, 13).decode('utf-8')
+        command = command_window.getstr(0, 1, 28).decode('utf-8')
         curses.noecho()
         command_window.clear()
         command_window.refresh()
 
         command, params = command[0:1], command[1:].strip()
         if command == 'n':
-            timer = Timer()
-            window = Window()
-            list_size = len(windows)
-            window.build(list_size)
-            params = '[' + str(list_size + 1) + '] ' + params
-            window.set_title(params)
-            timer.start()
-            update_window(window, timer)
+            num_triggers = len(triggers)
 
-            timers.append(timer)
-            windows.append(window)
+            trigger = Trigger()
+            trigger.build()
+            y = (trigger.height * num_triggers) + 1
+            trigger.move(y, 1)
 
+            title = '[' + str(num_triggers + 1) + '] ' + params
+            trigger.set_title(title)
+            trigger.start()
+            update_trigger(trigger)
+
+            triggers.append(trigger)
         elif command == 'e':
             try:
                 params, title = params[0:1], params[1:]
-                windows[int(params) - 1].set_title('[' + params + ']' + title)
+                triggers[int(params) - 1].set_title('[' + params + ']' + title)
             except:
                 command_window.addstr('Edit: invalid argument.')
                 command_window.refresh()
 
         elif command == 'h':
-            for window in windows:
-                window.set_no_update(True)
-            help_window = create_help(height, width)
-            help_window.refresh()
+            for trigger in triggers:
+                trigger.disable_display()
+            print_help(help_window)
             in_help_mode = True
-
         elif command == 'p':
             try:
-                timers[int(params) - 1].toggle()
+                triggers[int(params) - 1].toggle()
             except:
                 command_window.addstr('Pause: invalid argument.')
                 command_window.refresh()
-
         elif command == 'r':
             try:
-                timers[int(params) - 1].reset()
+                triggers[int(params) - 1].reset()
             except:
                 command_window.addstr('Reset: invalid argument.')
                 command_window.refresh()
+        else:
+            command_window.addstr('Unrecognized command.')
+            command_window.refresh()
 
 
     curses.endwin()
 
-#    print("""Trigger v.0.1
-#
-#Usage is as follows:
-#
-#n [title]   - Creates and starts a new timer with the supplied title.
-#p[n] - Pauses/starts the nth timer.
-#r[n] - Resets the nth timer.
-#
-#    """)
-
-# Run the script.
 if __name__ == '__main__':
     main()
