@@ -28,5 +28,10 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.2'
     ),
-    packages=['trigger', 'test']
+    packages=['trigger', 'test'],
+    entry_points={
+        'console_scripts': [
+            'trigger = trigger.main:main',
+        ],
+    }
 )
