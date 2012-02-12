@@ -15,6 +15,8 @@ Okay, how do I use it?
 Installing
 ~~~~~~~~~~
 
+From the command line::
+
     pip install trigger
 
 
