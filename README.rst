@@ -1,7 +1,7 @@
 trigger
 =======
 
-trigger is an ncurses stopwatch/timer.
+trigger is an ncurses stopwatch/timer.  It supports multiple, simultaneous timers, which makes it ideal for keeping track of time spent on various tasks.
 
 Show me the goods
 -----------------
