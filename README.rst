@@ -6,6 +6,8 @@ trigger is an ncurses stopwatch/timer.
 Show me the goods
 -----------------
 
+.. image:: http://nsinopoli.github.com/trigger/sstrigger.png
+
 
 Okay, how do I use it?
 ----------------------
@@ -17,7 +19,7 @@ Installing
 Commands
 ~~~~~~~~
 
-Typing ":" will bring up a command window at the bottom of the screen (yes, a la Vim).  The following commands are supported:
+Typing ":" will bring up a command window at the bottom of the screen (yes, a la Vim).  The following commands are supported::
 
     n [title]   - Creates and starts a new timer.
     e[n][title] - Edits the title of the nth timer.
@@ -26,6 +28,17 @@ Typing ":" will bring up a command window at the bottom of the screen (yes, a la
     q           - Quits the program.
     h           - Shows the help screen.
 
+So, to create a timer titled, 'Test', simply type::
+
+    :n Test
+
+Then, to pause it::
+
+    :p1
+
+To reset it::
+
+    :r1
 
 Version Information
 -------------------
