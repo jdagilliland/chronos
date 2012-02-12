@@ -25,7 +25,12 @@ To use trigger, run it from the command line::
 
     trigger
 
-You should see a blank screen with a border.  Type ":" to bring up a command window at the bottom of the screen (yes, a la Vim).  The following commands are supported::
+You should see a blank screen with a border.
+
+Commands
+~~~~~~~~
+
+Type ":" to bring up a command window at the bottom of the screen (yes, a la Vim).  The following commands are supported::
 
     n [title]   - Creates and starts a new timer.
     e[n][title] - Edits the title of the nth timer.
