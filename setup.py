@@ -3,13 +3,13 @@
 from distutils.core import setup
 
 setup(
-    name='trigger',
+    name='chronos',
     version='0.1',
     description='An ncurses stopwatch/timer.',
     long_description=open('README.rst').read() + "\n\n" + open('HISTORY.rst').read(),
     author='Nick Sinopoli',
     author_email='nsinopoli@gmail.com',
-    url='http://git.io/trigger',
+    url='http://git.io/chronos',
     license='BSD',
     classifiers=(
         'Development Status :: 5 - Production/Stable',
@@ -28,10 +28,10 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.2'
     ),
-    packages=['trigger', 'test'],
+    packages=['chronos', 'test'],
     entry_points={
         'console_scripts': [
-            'trigger = trigger.main:main',
+            'chronos = chronos.main:main',
         ],
     }
 )

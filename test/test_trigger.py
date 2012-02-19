@@ -1,6 +1,6 @@
 import time
 
-from trigger.main import Trigger
+from chronos.main import Trigger
 
 def test_add_padding():
     trigger = Trigger()

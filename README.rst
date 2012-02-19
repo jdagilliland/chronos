@@ -1,12 +1,12 @@
-trigger
+chronos
 =======
 
-trigger is an ncurses stopwatch/timer.  It supports multiple simultaneous timers, which makes it ideal for keeping track of time spent on various tasks.
+chronos is an ncurses stopwatch/timer.  It supports multiple simultaneous timers, which makes it ideal for keeping track of time spent on various tasks.
 
 Show me the goods
 -----------------
 
-.. image:: http://nsinopoli.github.com/trigger/sstrigger.png
+.. image:: http://nsinopoli.github.com/chronos/chronos.png
 
 Okay, how do I use it?
 ----------------------
@@ -16,14 +16,14 @@ Installing
 
 From the command line::
 
-    pip install trigger
+    pip install chronos
 
 Usage
 ~~~~~
 
-To use trigger, run it from the command line::
+To use chronos, run it from the command line::
 
-    trigger
+    chronos
 
 You should see a blank screen with a border.
 
