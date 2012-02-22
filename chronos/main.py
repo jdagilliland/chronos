@@ -2,6 +2,7 @@
 
 import curses
 import math
+import os
 import threading
 import time
 
@@ -152,10 +153,7 @@ def print_help(help_window):
 def update_trigger(trigger):
     trigger.render_time()
 
-def main():
-    """Primary entry point."""
-    screen = curses.initscr()
-    curses.noecho()
+def main(screen):
     curses.curs_set(0)
 
     screen.border(0)
@@ -243,7 +241,8 @@ def main():
             command_window.refresh()
 
 
-    curses.endwin()
-
 if __name__ == '__main__':
-    main()
+    # xterm-color can't handle curs_set(0)
+    if os.environ['TERM'] == 'xterm-color':
+        os.environ['TERM'] = 'xterm';
+    curses.wrapper(main)
