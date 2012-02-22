@@ -153,7 +153,7 @@ def print_help(help_window):
 def update_trigger(trigger):
     trigger.render_time()
 
-def main(screen):
+def run(screen):
     curses.curs_set(0)
 
     screen.border(0)
@@ -240,9 +240,12 @@ def main(screen):
             command_window.addstr('Unrecognized command.')
             command_window.refresh()
 
-
-if __name__ == '__main__':
+def main():
     # xterm-color can't handle curs_set(0)
     if os.environ['TERM'] == 'xterm-color':
         os.environ['TERM'] = 'xterm'
-    curses.wrapper(main)
+    curses.wrapper(run)
+
+
+if __name__ == '__main__':
+    main()
