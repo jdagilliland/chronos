@@ -244,5 +244,5 @@ def main(screen):
 if __name__ == '__main__':
     # xterm-color can't handle curs_set(0)
     if os.environ['TERM'] == 'xterm-color':
-        os.environ['TERM'] = 'xterm';
+        os.environ['TERM'] = 'xterm'
     curses.wrapper(main)
