@@ -54,7 +54,7 @@ To reset it::
 Version Information
 -------------------
 
-Current stable release is v0.1, last updated on 19 February 2012.
+Current stable release is v0.1.1, last updated on 21 February 2012.
 
 Feedback
 --------
