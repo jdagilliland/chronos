@@ -1,58 +1,5 @@
 from chronos.main import Trigger
 
-def test_add_padding():
-    trigger = Trigger()
-
-    minimum_length = 7
-
-    string = '1'
-    padding = ' ' * 3
-    padded = trigger.add_padding(string, minimum_length)
-    check = padding + '1' + padding
-    assert padded == check
-
-    string = '2' * 2
-    padding = ' ' * 3
-    padded = trigger.add_padding(string, minimum_length)
-    check = padding + string + padding
-    assert padded == check
-
-    string = '3' * 3
-    padding = ' ' * 2
-    padded = trigger.add_padding(string, minimum_length)
-    check = padding + string + padding
-    assert padded == check
-
-    string = '4' * 4
-    padding = ' ' * 2
-    padded = trigger.add_padding(string, minimum_length)
-    check = padding + string + padding
-    assert padded == check
-
-    string = '5' * 5
-    padding = ' '
-    padded = trigger.add_padding(string, minimum_length)
-    check = padding + string + padding
-    assert padded == check
-
-    string = '6' * 6
-    padding = ' '
-    padded = trigger.add_padding(string, minimum_length)
-    check = padding + string + padding
-    assert padded == check
-
-    string = '7' * 7
-    padding = ' '
-    padded = trigger.add_padding(string, minimum_length)
-    check = padding + string + padding
-    assert padded == check
-
-    string = '8' * 8
-    padding = ' '
-    padded = trigger.add_padding(string, minimum_length)
-    check = padding + string + padding
-    assert padded == check
-
 def test_add_time():
     trigger = Trigger()
 

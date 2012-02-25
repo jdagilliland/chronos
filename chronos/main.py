@@ -24,37 +24,27 @@ def set_interval(interval):
 
 class Trigger:
 
-    def __init__(self, height=None, width=None):
+    def __init__(self, colors=None, height=None, width=None):
         self.elapsed = 0
         self.running = False
         self.display_enabled = True
+        self.highlight = False
+
+        self.colors = colors
 
         if height is None:
-            height = 6
+            height = 1
         self.height = height
 
         if width is None:
-            width = 35
+            width = 78
         self.width = width
-
-    def add_padding(self, string, min_length):
-        string_length = len(string)
-        final_length = max(string_length, min_length - 2) + 2
-
-        if (final_length - string_length) % 2:
-            final_length += 1
-
-        padding_length = int((final_length - string_length) / 2)
-        padding = ' ' * padding_length
-
-        return padding + string + padding
 
     def add_time(self, amount):
         self.elapsed += self.parse_time(amount)
 
     def build(self):
-        self.window = curses.newwin(self.height, self.width, 1, 1)
-        self.window.border(0)
+        self.window = curses.newwin(self.height, self.width, 0, 0)
 
     def disable_display(self):
         self.display_enabled = False
@@ -97,27 +87,38 @@ class Trigger:
         if self.display_enabled:
             self.window.refresh()
 
-    def render_time(self):
-        display = self.format_seconds(self.get_elapsed())
+    def render(self):
+        time = self.format_seconds(self.get_elapsed())
         if self.running:
-            display += '         '
+            time += '           '
         else:
-            display += ' [Paused]'
+            time += ' [Paused]  '
 
-        self.window.addstr(4, 1, display)
+        self.window.erase()
+
+        if self.colors:
+            if self.highlight:
+                color_time = self.colors['hgreen']
+                color_title = self.colors['hblue']
+            else:
+                color_time = self.colors['green']
+                color_title = self.colors['blue']
+            self.window.addstr(0, 0, time, color_time)
+            self.window.addstr(0, len(time), self.title, color_title)
+        else:
+            self.window.addstr(0, 0, time)
+            self.window.addstr(0, len(time), self.title)
+
         self.refresh()
 
     def reset(self):
         self.elapsed = 0
 
+    def set_highlight(self, highlight):
+        self.highlight = highlight
+
     def set_title(self, title):
-        title = self.add_padding(title, self.width - 3)
-        self.window.addstr(1, 1, title)
-
-        underline = '-' * (self.width - 2)
-        self.window.addstr(2, 1, underline)
-
-        self.refresh()
+        self.title = title
 
     def start(self):
         self.running = True
@@ -169,120 +170,147 @@ def print_help(help_window):
 @set_interval(1)
 def update_trigger(trigger):
     trigger.tick()
-    trigger.render_time()
+    trigger.render()
 
-def run(screen):
-    curses.curs_set(0)
 
-    screen.border(0)
-    height, width = screen.getmaxyx()
-    screen.refresh()
+def capture_command(command_window, description):
+    curses.echo()
 
-    triggers = []
+    command_window.clear()
+    command_window.refresh()
+    command_window.addstr(0, 0, description)
 
-    command_window = curses.newwin(1, width - 3, height - 2, 1)
-    help_window = curses.newwin(height - 2, width - 2, 1, 1)
+    command = command_window.getstr(0, len(description), 28).decode('utf-8')
+    curses.noecho()
+    command_window.clear()
+    command_window.refresh()
 
-    command = None
-    in_help_mode = False
-
-    while command != 'q':
-        char = screen.getch()
-
-        if in_help_mode:
-            if char != ord('q'):
-                continue
-            else:
-                help_window.clear()
-                help_window.refresh()
-                for trigger in triggers:
-                    trigger.enable_display()
-                    trigger.redraw()
-                in_help_mode = False
-
-        if char != ord(':'):
-            continue
-
-        curses.echo()
-
-        command_window.clear()
-        command_window.refresh()
-        command_window.addstr(0, 0, ':')
-
-        command = command_window.getstr(0, 1, 28).decode('utf-8')
-        curses.noecho()
-        command_window.clear()
-        command_window.refresh()
-
-        command, params = command[0:1], command[1:].strip()
-        if command == 'n':
-            num_triggers = len(triggers)
-
-            trigger = Trigger()
-            trigger.build()
-            y = (trigger.height * num_triggers) + 1
-            trigger.move(y, 1)
-
-            title = '[' + str(num_triggers + 1) + '] ' + params
-            trigger.set_title(title)
-            trigger.start()
-            update_trigger(trigger)
-
-            triggers.append(trigger)
-
-        elif command == 'e':
-            try:
-                params, title = params[0:1], params[1:]
-                triggers[int(params) - 1].set_title('[' + params + ']' + title)
-            except:
-                command_window.addstr('Edit: invalid argument.')
-                command_window.refresh()
-
-        elif command == 'a':
-            try:
-                params, time = params[0:1], params[1:].strip()
-                triggers[int(params) - 1].add_time(time)
-            except:
-                command_window.addstr('Add: invalid argument.')
-                command_window.refresh()
-
-        elif command == 's':
-            try:
-                params, time = params[0:1], params[1:].strip()
-                triggers[int(params) - 1].subtract_time(time)
-            except:
-                command_window.addstr('Subtract: invalid argument.')
-                command_window.refresh()
-
-        elif command == 'h':
-            for trigger in triggers:
-                trigger.disable_display()
-            print_help(help_window)
-            in_help_mode = True
-
-        elif command == 'p':
-            try:
-                triggers[int(params) - 1].toggle()
-            except:
-                command_window.addstr('Pause: invalid argument.')
-                command_window.refresh()
-
-        elif command == 'r':
-            try:
-                triggers[int(params) - 1].reset()
-            except:
-                command_window.addstr('Reset: invalid argument.')
-                command_window.refresh()
-
-        else:
-            command_window.addstr('Unrecognized command.')
-            command_window.refresh()
+    return command
 
 def main():
     # xterm-color can't handle curs_set(0)
     if os.environ['TERM'] == 'xterm-color':
         os.environ['TERM'] = 'xterm'
-    curses.wrapper(run)
+
+
+    screen = curses.initscr()
+    # TODO: FIX HIGHLIGHTING FOR NO COLORS
+    if not curses.has_colors():
+        colors = None
+    else:
+        curses.start_color()
+        curses.use_default_colors()
+        curses.init_pair(1, curses.COLOR_BLUE, -1)
+        curses.init_pair(2, curses.COLOR_GREEN, -1)
+        colors = {
+            'blue': curses.color_pair(1),
+            'hblue': curses.color_pair(1) | curses.A_REVERSE,
+            'green': curses.color_pair(2),
+            'hgreen': curses.color_pair(2) | curses.A_REVERSE
+        }
+
+    curses.noecho()
+    screen.keypad(1)
+
+    curses.curs_set(0)
+
+    height, width = screen.getmaxyx()
+
+    triggers = []
+
+    command_window = curses.newwin(1, width - 3, height - 1, 0)
+    help_window = curses.newwin(height - 2, width - 2, 1, 1)
+
+    keep_alive = True
+    in_help_mode = False
+
+    position = 0
+
+    while keep_alive:
+        char = screen.getch()
+
+        # TODO: Fix this
+        #if in_help_mode:
+        #    if char != ord('q'):
+        #        continue
+        #    else:
+        #        help_window.clear()
+        #        help_window.refresh()
+        #        for trigger in triggers:
+        #            trigger.enable_display()
+        #            trigger.redraw()
+        #        in_help_mode = False
+
+        if char == curses.KEY_DOWN or char == ord('j'):
+            if position < len(triggers) - 1:
+                position += 1
+        elif char == curses.KEY_UP or char == ord('k'):
+            if position > 0:
+                position -= 1
+
+        # New
+        elif char == ord('n'):
+            title = capture_command(command_window, '[NEW] Enter the title: ')
+
+            num_triggers = len(triggers)
+
+            trigger = Trigger(colors, 1, width - 2)
+            trigger.build()
+            trigger.move(num_triggers, 0)
+
+            trigger.set_title(title)
+            trigger.start()
+            trigger.render()
+            update_trigger(trigger)
+
+            triggers.append(trigger)
+
+        # Edit
+        elif char == ord('e') and len(triggers):
+            title = capture_command(command_window, '[EDIT] Enter the title: ')
+            triggers[position].set_title(title)
+
+        # Add
+        elif char == ord('a') and len(triggers):
+            time = capture_command(command_window, '[ADD] Enter the amount of time: ')
+            triggers[position].add_time(time)
+
+        # Subtract
+        elif char == ord('s') and len(triggers):
+            time = capture_command(command_window, '[SUBTRACT] Enter the amount of time: ')
+            triggers[position].subtract_time(time)
+
+        # Pause
+        elif char == ord('p') and len(triggers):
+            triggers[position].toggle()
+
+        # Reset
+        elif char == ord('r') and len(triggers):
+            command = capture_command(command_window, '[RESET] Are you sure? [y/N]: ')
+            if command == 'y':
+                triggers[position].reset()
+
+        # Quit
+        elif char == ord('q'):
+            command = capture_command(command_window, '[QUIT] Are you sure? [y/N]: ')
+            keep_alive = ( command != 'y' )
+
+
+        for index, trigger in enumerate(triggers):
+            if index == position:
+                triggers[index].set_highlight(True)
+            else:
+                triggers[index].set_highlight(False)
+            triggers[index].render()
+
+        # TODO: Fix this
+        #if command == 'h':
+        #    for trigger in triggers:
+        #        trigger.disable_display()
+        #    print_help(help_window)
+        #    in_help_mode = True
+
+    curses.endwin()
 
 
 if __name__ == '__main__':
