@@ -32,12 +32,14 @@ Commands
 
 Type ":" to bring up a command window at the bottom of the screen (yes, a la Vim).  The following commands are supported::
 
-    n [title]   - Creates and starts a new timer.
-    e[n][title] - Edits the title of the nth timer.
-    p[n]        - Pauses/starts the nth timer.
-    r[n]        - Resets the nth timer.
-    q           - Quits the program.
-    h           - Shows the help screen.
+    n [title]      - Creates and starts a new timer.
+    e[n][title]    - Edits the title of the nth timer.
+    p[n]           - Pauses/starts the nth timer.
+    r[n]           - Resets the nth timer.
+    a[n][xh|ym|zs] - Adds time to the nth timer.
+    s[n][xh|ym|zs] - Subtracts time from the nth timer.
+    q              - Quits the program.
+    h              - Shows the help screen.
 
 So, to create a timer titled, 'Test', simply type::
 
@@ -47,6 +49,14 @@ Then, to pause it::
 
     :p1
 
+To add 1 hour and 5 minutes to it::
+
+    :a1 1h5m
+
+To subtract 45 minutes and 30 seconds from it::
+
+    :s1 45m30s
+
 To reset it::
 
     :r1
@@ -54,7 +64,7 @@ To reset it::
 Version Information
 -------------------
 
-Current stable release is v0.1.1, last updated on 21 February 2012.
+Current stable release is v0.1.2, last updated on 24 February 2012.
 
 Feedback
 --------
