@@ -3,8 +3,8 @@
 import curses
 import math
 import os
+import re
 import threading
-import time
 
 def set_interval(interval):
     def outer_wrap(function):
@@ -25,7 +25,6 @@ def set_interval(interval):
 class Trigger:
 
     def __init__(self, height=None, width=None):
-        self.start_time = time.time()
         self.elapsed = 0
         self.running = False
         self.display_enabled = True
@@ -50,6 +49,9 @@ class Trigger:
 
         return padding + string + padding
 
+    def add_time(self, amount):
+        self.elapsed += self.parse_time(amount)
+
     def build(self):
         self.window = curses.newwin(self.height, self.width, 1, 1)
         self.window.border(0)
@@ -60,13 +62,6 @@ class Trigger:
     def enable_display(self):
         self.display_enabled = True
 
-    def get_elapsed(self):
-        if self.running:
-            elapsed = self.elapsed + (time.time() - self.start_time)
-            return elapsed
-        else:
-            return self.elapsed
-
     def format_seconds(self, elapsed):
         hours = math.floor(elapsed / 3600)
         remainder = elapsed % 3600
@@ -75,9 +70,25 @@ class Trigger:
 
         return "%.2d:%.2d:%.2d" % (hours, minutes, seconds)
 
+    def get_elapsed(self):
+        return self.elapsed
+
     def move(self, y, x):
         self.window.mvwin(y, x)
         self.refresh()
+
+    def parse_time(self, amount):
+        total = 0
+        terms = re.findall('[\d]+[h|m|s]+', amount)
+        for term in terms:
+            if term[-1] == 'h':
+                total += int(term[:-1]) * 3600
+            elif term[-1] == 'm':
+                total += int(term[:-1]) * 60
+            elif term[-1] == 's':
+                total += int(term[:-1])
+
+        return total
 
     def redraw(self):
         self.window.touchwin()
@@ -97,7 +108,6 @@ class Trigger:
         self.refresh()
 
     def reset(self):
-        self.start_time = time.time()
         self.elapsed = 0
 
     def set_title(self, title):
@@ -110,14 +120,19 @@ class Trigger:
         self.refresh()
 
     def start(self):
-        if not self.running:
-            self.start_time = time.time()
-            self.running = True
+        self.running = True
 
     def stop(self):
+        self.running = False
+
+    def subtract_time(self, amount):
+        self.elapsed -= self.parse_time(amount)
+        if self.elapsed < 0:
+            self.elapsed = 0
+
+    def tick(self):
         if self.running:
-            self.elapsed += time.time() - self.start_time
-            self.running = False
+            self.add_time('1s')
 
     def toggle(self):
         if self.running:
@@ -135,22 +150,25 @@ def print_help(help_window):
     help_window.addstr(4, 0, description)
 
     commands = [
-        'n [title]   - Creates and starts a new timer.',
-        'e[n][title] - Edits the title of the nth timer.',
-        'p[n]        - Pauses/starts the nth timer.',
-        'r[n]        - Resets the nth timer.',
-        'q           - Quits the program.',
-        'h           - Shows this help screen.'
+        'n [title]      - Creates and starts a new timer.',
+        'e[n][title]    - Edits the title of the nth timer.',
+        'p[n]           - Pauses/starts the nth timer.',
+        'r[n]           - Resets the nth timer.',
+        'a[n][xh|ym|zs] - Adds time to the nth timer.',
+        's[n][xh|ym|zs] - Subtracts time from the nth timer.',
+        'q              - Quits the program.',
+        'h              - Shows this help screen.'
     ]
     for index, command in enumerate(commands):
         help_window.addstr(index + 6, 0, command)
 
-    help_window.addstr(13, 0, 'To return to the main screen, type "q".')
+    help_window.addstr(15, 0, 'To return to the main screen, type "q".')
     help_window.touchwin()
     help_window.refresh()
 
 @set_interval(1)
 def update_trigger(trigger):
+    trigger.tick()
     trigger.render_time()
 
 def run(screen):
@@ -211,6 +229,7 @@ def run(screen):
             update_trigger(trigger)
 
             triggers.append(trigger)
+
         elif command == 'e':
             try:
                 params, title = params[0:1], params[1:]
@@ -219,23 +238,42 @@ def run(screen):
                 command_window.addstr('Edit: invalid argument.')
                 command_window.refresh()
 
+        elif command == 'a':
+            try:
+                params, time = params[0:1], params[1:].strip()
+                triggers[int(params) - 1].add_time(time)
+            except:
+                command_window.addstr('Add: invalid argument.')
+                command_window.refresh()
+
+        elif command == 's':
+            try:
+                params, time = params[0:1], params[1:].strip()
+                triggers[int(params) - 1].subtract_time(time)
+            except:
+                command_window.addstr('Subtract: invalid argument.')
+                command_window.refresh()
+
         elif command == 'h':
             for trigger in triggers:
                 trigger.disable_display()
             print_help(help_window)
             in_help_mode = True
+
         elif command == 'p':
             try:
                 triggers[int(params) - 1].toggle()
             except:
                 command_window.addstr('Pause: invalid argument.')
                 command_window.refresh()
+
         elif command == 'r':
             try:
                 triggers[int(params) - 1].reset()
             except:
                 command_window.addstr('Reset: invalid argument.')
                 command_window.refresh()
+
         else:
             command_window.addstr('Unrecognized command.')
             command_window.refresh()
