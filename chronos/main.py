@@ -146,39 +146,108 @@ def update_trigger(trigger):
 def capture_command(command_window, description):
     curses.echo()
     command_window.addstr(0, 0, description)
+    height, width = command_window.getmaxyx()
 
-    command = command_window.getstr(0, len(description), 28).decode('utf-8')
+    desc_length = len(description)
+    command = command_window.getstr(0, desc_length, width - desc_length).decode('utf-8')
     curses.noecho()
-    command_window.clear()
-    command_window.refresh()
+    repaint(command_window)
 
     return command
 
-def print_help(help_window):
-    help_window.addstr(0, 0, 'Help')
-    help_window.addstr(1, 0, '----')
-    help_window.addstr(3, 0, 'Commands')
+def define_colors():
+    if not curses.has_colors():
+        colors = {
+            'title': curses.A_NORMAL,
+            'htitle': curses.A_REVERSE,
+            'time': curses.A_NORMAL,
+            'htime': curses.A_REVERSE,
+            'status': curses.A_REVERSE
+        }
+    else:
+        curses.start_color()
+        curses.use_default_colors()
+        curses.init_pair(1, curses.COLOR_BLUE, -1)
+        curses.init_pair(2, curses.COLOR_GREEN, -1)
+        curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLUE)
+        colors = {
+            'title': curses.color_pair(1),
+            'htitle': curses.color_pair(1) | curses.A_REVERSE,
+            'time': curses.color_pair(2),
+            'htime': curses.color_pair(2) | curses.A_REVERSE,
+            'status': curses.color_pair(3) | curses.A_BOLD
+        }
+    return colors
 
-    commands = [
+def print_help(screen):
+
+    height, width = screen.getmaxyx()
+    height -= 3
+    width -= 2
+
+    lines = [
+        'Help',
+        '----',
+        '',
+        'Commands',
+        '',
         'n - Creates and starts a new timer.',
         'j - Move cursor down.',
         'k - Move cursor up.',
+        'd - Deletes the selected timer.',
         'e - Edits the title of the selected timer.',
         'p - Pauses/starts the selected timer.',
         'r - Resets the selected timer.',
         'a - Adds time to the selected timer.',
         's - Subtracts time from the selected timer.',
         'q - Quits the program.',
-        'h - Shows this help screen.'
+        'h - Shows this help screen.',
+        '',
+        '',
+        'Adding and Subtracting Time',
+        '',
+        'When entering the amount of time to add or subtract, ',
+        'you can use any combination of the following formats:',
+        '',
+        'xh - x number of hours',
+        'ym - y number of minutes',
+        'zs - z number of seconds',
+        '',
+        'So if you wanted to add/subtract 1 hour and 5 minutes, type:',
+        '1h5m',
+        '',
+        'Or if you wanted to add/subtract 45 minutes and 30 seconds, type:',
+        '45m30s',
+        '',
+        '',
+        'To return to the main screen, type "q".'
     ]
-    for index, command in enumerate(commands):
-        help_window.addstr(index + 5, 0, command)
 
-    # TODO: Add description about time formats
-    quit_message = 'To return to the main screen, type "q".'
-    help_window.addstr(len(commands) + 7, 0, quit_message)
-    help_window.touchwin()
-    help_window.refresh()
+    pad_y = max(len(lines), height)
+    max_y = pad_y - height - 1
+
+    help_window = curses.newpad(pad_y, width)
+    for index, line in enumerate(lines):
+        help_window.addstr(index, 0, line)
+
+    char = None
+    position = 0
+
+    while char != ord('q'):
+        help_window.refresh(position, 0, 0, 0, height, width)
+        char = screen.getch()
+
+        if char == curses.KEY_DOWN or char == ord('j'):
+            position = min(position + 1, max_y)
+        elif char == curses.KEY_UP or char == ord('k'):
+            position = max(position - 1, 0)
+
+    screen.touchwin()
+    screen.refresh()
+
+def repaint(window):
+    window.clear()
+    window.refresh()
 
 def main():
     # xterm-color can't handle curs_set(0)
@@ -187,57 +256,28 @@ def main():
 
 
     screen = curses.initscr()
-    if not curses.has_colors():
-        colors = {
-            'title': curses.A_NORMAL,
-            'htitle': curses.A_REVERSE,
-            'time': curses.A_NORMAL,
-            'htime': curses.A_REVERSE
-        }
-    else:
-        curses.start_color()
-        curses.use_default_colors()
-        curses.init_pair(1, curses.COLOR_BLUE, -1)
-        curses.init_pair(2, curses.COLOR_GREEN, -1)
-        colors = {
-            'title': curses.color_pair(1),
-            'htitle': curses.color_pair(1) | curses.A_REVERSE,
-            'time': curses.color_pair(2),
-            'htime': curses.color_pair(2) | curses.A_REVERSE
-        }
-
+    colors = define_colors()
     curses.noecho()
-    screen.keypad(1)
-
     curses.curs_set(0)
+    screen.keypad(1)
 
     height, width = screen.getmaxyx()
 
     triggers = []
     stoppers = []
 
-    command_window = curses.newwin(1, width - 3, height - 1, 0)
-    help_window = curses.newwin(height - 2, width - 2, 0, 0)
+    status = "chronos v0.2 - Type 'h' for help, or 'q' to quit."
+    status_bar = '{s:<{l}}'.format(s=status, l=width)
+    screen.addstr(height - 2, 0, status_bar, colors['status'])
+
+    command_window = curses.newwin(1, width, height - 1, 0)
 
     keep_alive = True
-    in_help_mode = False
 
     position = 0
 
     while keep_alive:
         char = screen.getch()
-
-        if in_help_mode:
-            if char != ord('q'):
-                continue
-            else:
-                help_window.clear()
-                help_window.refresh()
-                for trigger in triggers:
-                    trigger.enable_display()
-                    trigger.redraw()
-                in_help_mode = False
-                char = None
 
         if char == curses.KEY_DOWN or char == ord('j'):
             if position < len(triggers) - 1:
@@ -247,8 +287,9 @@ def main():
                 position -= 1
 
         # New
-        elif char == ord('n'):
-            title = capture_command(command_window, '[NEW] Enter the title: ')
+        elif char == ord('n') and len(triggers) < height - 2:
+            prompt = '[NEW] Enter the title: '
+            title = capture_command(command_window, prompt)
 
             config = {
                 'colors': colors,
@@ -264,41 +305,46 @@ def main():
             trigger.render()
 
             stoppers.append(update_trigger(trigger))
-
             triggers.append(trigger)
 
         # Delete
         elif char == ord('d') and len(triggers):
-            stoppers[position].set()
-            triggers[position].clear()
+            prompt = '[DELETE] Are you sure? [y/N]: '
+            command = capture_command(command_window, prompt)
+            if command.lower() == 'y':
+                stoppers[position].set()
+                triggers[position].clear()
 
-            current = position + 1
-            while current < len(triggers):
-                y, x = triggers[current].get_coordinates()
-                triggers[current].move(y - 1, x)
-                current += 1
+                current = position + 1
+                while current < len(triggers):
+                    y, x = triggers[current].get_coordinates()
+                    triggers[current].move(y - 1, x)
+                    current += 1
 
-            del triggers[position]
-            del stoppers[position]
-            if position == len(triggers) and position:
-                position -= 1
+                del triggers[position]
+                del stoppers[position]
+                if position == len(triggers) and position:
+                    position -= 1
 
-            screen.clear()
-            screen.refresh()
+                repaint(screen)
+                screen.addstr(height - 2, 0, status_bar, colors['status'])
 
         # Edit
         elif char == ord('e') and len(triggers):
-            title = capture_command(command_window, '[EDIT] Enter the title: ')
+            prompt = '[EDIT] Enter the title: '
+            title = capture_command(command_window, prompt)
             triggers[position].set_title(title)
 
         # Add
         elif char == ord('a') and len(triggers):
-            time = capture_command(command_window, '[ADD] Enter the amount of time: ')
+            prompt = '[ADD] Enter the amount of time: '
+            time = capture_command(command_window, prompt)
             triggers[position].add_time(time)
 
         # Subtract
         elif char == ord('s') and len(triggers):
-            time = capture_command(command_window, '[SUBTRACT] Enter the amount of time: ')
+            prompt = '[SUBTRACT] Enter the amount of time: '
+            time = capture_command(command_window, prompt)
             triggers[position].subtract_time(time)
 
         # Pause
@@ -307,21 +353,25 @@ def main():
 
         # Reset
         elif char == ord('r') and len(triggers):
-            command = capture_command(command_window, '[RESET] Are you sure? [y/N]: ')
-            if command == 'y':
+            prompt = '[RESET] Are you sure? [y/N]: '
+            command = capture_command(command_window, prompt)
+            if command.lower() == 'y':
                 triggers[position].reset()
 
         # Help
         elif char == ord('h'):
             for trigger in triggers:
                 trigger.disable_display()
-            print_help(help_window)
-            in_help_mode = True
+            print_help(screen)
+            for trigger in triggers:
+                trigger.enable_display()
+                trigger.redraw()
 
         # Quit
         elif char == ord('q'):
-            command = capture_command(command_window, '[QUIT] Are you sure? [y/N]: ')
-            keep_alive = ( command != 'y' )
+            prompt = '[QUIT] Are you sure? [y/N]: '
+            command = capture_command(command_window, prompt)
+            keep_alive = ( command.lower() != 'y' )
 
 
         for index, trigger in enumerate(triggers):
