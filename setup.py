@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     name='chronos',
-    version='0.1.2',
+    version='0.2',
     description='An ncurses stopwatch/timer.',
     long_description=open('README.rst').read() + "\n\n" + open('HISTORY.rst').read(),
     author='Nick Sinopoli',

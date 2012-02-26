@@ -1,6 +1,11 @@
 Changelog
 =========
 
+v0.2
+------
+
+* Overhaul the UI and improve the UX
+
 v0.1.2
 ------
 

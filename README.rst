@@ -1,12 +1,13 @@
 chronos
 =======
 
-chronos is an ncurses stopwatch/timer.  It supports multiple simultaneous timers, which makes it ideal for keeping track of time spent on various tasks.
+chronos is an ncurses stopwatch/timer.  It supports multiple simultaneous
+timers, which makes it ideal for keeping track of time spent on various tasks.
 
 Show me the goods
 -----------------
 
-.. image:: http://nsinopoli.github.com/chronos/chronos.png
+.. image:: http://nsinopoli.github.com/chronos/chronos02.png
 
 Okay, how do I use it?
 ----------------------
@@ -18,6 +19,10 @@ From the command line::
 
     pip install chronos
 
+If chronos is already installed, you can upgrade to the latest version with::
+
+    pip install --upgrade chronos
+
 Usage
 ~~~~~
 
@@ -25,46 +30,45 @@ To use chronos, run it from the command line::
 
     chronos
 
-You should see a blank screen with a border.
-
 Commands
 ~~~~~~~~
 
-Type ":" to bring up a command window at the bottom of the screen (yes, a la Vim).  The following commands are supported::
+The following commands are supported::
 
-    n [title]      - Creates and starts a new timer.
-    e[n][title]    - Edits the title of the nth timer.
-    p[n]           - Pauses/starts the nth timer.
-    r[n]           - Resets the nth timer.
-    a[n][xh|ym|zs] - Adds time to the nth timer.
-    s[n][xh|ym|zs] - Subtracts time from the nth timer.
-    q              - Quits the program.
-    h              - Shows the help screen.
+    n - Creates and starts a new timer.
+    j - Move cursor down.
+    k - Move cursor up.
+    d - Deletes the selected timer.
+    e - Edits the title of the selected timer.
+    p - Pauses/starts the selected timer.
+    r - Resets the selected timer.
+    a - Adds time to the selected timer.
+    s - Subtracts time from the selected timer.
+    q - Quits the program.
+    h - Shows the help screen.
 
-So, to create a timer titled, 'Test', simply type::
+Adding and Subtracting Time
++++++++++++++++++++++++++++
 
-    :n Test
+When entering the amount of time to add or subtract, you can use any
+combination of the following formats::
 
-Then, to pause it::
+    xh - x number of hours
+    ym - y number of minutes
+    zs - z number of seconds
 
-    :p1
+So if you wanted to add/subtract 1 hour and 5 minutes, type::
 
-To add 1 hour and 5 minutes to it::
+    1h5m
 
-    :a1 1h5m
+Or if you wanted to add/subtract 45 minutes and 30 seconds, type::
 
-To subtract 45 minutes and 30 seconds from it::
-
-    :s1 45m30s
-
-To reset it::
-
-    :r1
+    45m30s
 
 Version Information
 -------------------
 
-Current stable release is v0.1.2, last updated on 24 February 2012.
+Current stable release is v0.2, last updated on 26 February 2012.
 
 Feedback
 --------
